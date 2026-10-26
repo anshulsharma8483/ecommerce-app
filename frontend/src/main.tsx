@@ -71,15 +71,32 @@ function App() {
         ...options?.headers,
       },
     })
-
+  
     if (!response.ok) {
       const responseText = await response.text()
+  
       throw new Error(
         responseText || `Request failed: ${response.status}`,
       )
     }
-
-    return response.json() as Promise<T>
+  
+    // DELETE requests can succeed with an empty response body.
+    if (response.status === 204) {
+      return undefined as T
+    }
+  
+    const responseText = await response.text()
+  
+    // Handle other successful responses that have no body.
+    if (!responseText.trim()) {
+      return undefined as T
+    }
+  
+    try {
+      return JSON.parse(responseText) as T
+    } catch {
+      throw new Error('Server returned an invalid JSON response.')
+    }
   }
 
   async function loadProducts() {
@@ -96,7 +113,7 @@ function App() {
       setError(
         err instanceof Error
           ? err.message
-          : 'Products load nahi ho paaye.',
+          : 'Products could not be loaded.',
       )
     } finally {
       setLoading(false)
@@ -115,8 +132,8 @@ function App() {
     } catch (err) {
       setError(
         err instanceof Error
-          ? `Order history load nahi hui: ${err.message}`
-          : 'Order history load nahi hui.',
+          ? `Order history Did not load: ${err.message}`
+          : 'Order history Did not load.',
       )
     } finally {
       setHistoryLoading(false)
@@ -158,7 +175,7 @@ function App() {
       productData.stock < 0
     ) {
       setError(
-        'Product name, valid price aur stock enter karo.',
+        'Product name, Enter a valid price aur stock.',
       )
       return
     }
@@ -175,8 +192,8 @@ function App() {
 
       setMessage(
         editingId !== null
-          ? 'Product successfully update ho gaya!'
-          : 'Product successfully add ho gaya!',
+          ? 'Product successfully update!'
+          : 'Product successfully add!',
       )
 
       resetProductForm()
@@ -184,8 +201,8 @@ function App() {
     } catch (err) {
       setError(
         err instanceof Error
-          ? `Product save nahi hua: ${err.message}`
-          : 'Product save nahi hua.',
+          ? `The product was not saved: ${err.message}`
+          : 'The Product was not saved.',
       )
     }
   }
@@ -227,7 +244,7 @@ function App() {
       setError(
         err instanceof Error
           ? `Delete failed: ${err.message}`
-          : 'Product delete nahi hua.',
+          : 'The Product was not deleted.',
       )
     }
   }
@@ -242,7 +259,7 @@ function App() {
 
     if (existingItem) {
       if (existingItem.quantity >= product.stock) {
-        setError('Available stock se zyada quantity add nahi kar sakte.')
+        setError('You cannot add a quantity greater than the available stock.')
         return
       }
 
@@ -255,7 +272,7 @@ function App() {
       )
     } else {
       if (product.stock < 1) {
-        setError('Ye product abhi out of stock hai.')
+        setError('This product is currently out of stock.')
         return
       }
 
@@ -305,12 +322,12 @@ function App() {
     setMessage('')
 
     if (cart.length === 0) {
-      setError('Order place karne se pehle cart mein product add karo.')
+      setError('Add the product to your cart before placing an order.')
       return
     }
 
     if (!customerName.trim() || !customerAddress.trim()) {
-      setError('Customer name aur address enter karo.')
+      setError('Enter the Customer name aur address.')
       return
     }
 
@@ -329,7 +346,7 @@ function App() {
         }),
       })
 
-      setMessage('Order successfully place ho gaya! 🎉')
+      setMessage('Order has been Placed successfully! 🎉')
       setCart([])
       setCustomerName('')
       setCustomerAddress('')
@@ -571,7 +588,7 @@ function App() {
         {loading ? (
           <p>Products load ho rahe hain...</p>
         ) : products.length === 0 ? (
-          <p>Abhi koi product available nahi hai.</p>
+          <p>No products are currently available.</p>
         ) : (
           <div className="product-grid">
             {products.map((product) => (
@@ -632,8 +649,7 @@ function App() {
 
         {cart.length === 0 ? (
           <p>
-            Your cart is empty. Click "Add to Cart" to
-            Cart dabao.
+            Your cart is empty. Click "Add to Cart".
           </p>
         ) : (
           <>
