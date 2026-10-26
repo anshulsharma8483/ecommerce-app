@@ -204,7 +204,7 @@ function App() {
   }
 
   async function handleDelete(id: number) {
-    if (!window.confirm('Kya tum ye product delete karna chahte ho?')) {
+    if (!window.confirm('Do you want to delete this product?')) {
       return
     }
 
